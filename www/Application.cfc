@@ -123,8 +123,12 @@
                     <cfset ipAllowed = true>
                     <cfbreak>
                 </cfif>
-                <!--- Starts-with match --->
-                <cfif left(remoteIP, len(local.allowedIP)) eq local.allowedIP>
+                <!--- Starts-with match (append dot if missing to prevent 192.168.1 matching 192.168.10.x) --->
+                <cfset var prefix = local.allowedIP>
+                <cfif right(prefix, 1) neq ".">
+                    <cfset prefix = prefix & ".">
+                </cfif>
+                <cfif left(remoteIP, len(prefix)) eq prefix>
                     <cfset ipAllowed = true>
                     <cfbreak>
                 </cfif>
