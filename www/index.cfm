@@ -36,8 +36,7 @@
 
     <!--- ===== Editor Panel ===== --->
     <div class="editor-panel" id="editorPanel">
-        <div id="editor"><cfscript>
-</cfscript></div>
+        <div id="editor"></div>
     </div>
 
     <!--- ===== Splitter ===== --->

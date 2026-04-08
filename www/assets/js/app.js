@@ -13,6 +13,8 @@
         showPrintMargin: false,
         wrap: true
     });
+    // Set default content: empty cfscript block
+    editor.setValue("<cfscript>\n\n</cfscript>", -1);
     // Place cursor inside the cfscript block
     editor.gotoLine(2, 0, false);
     editor.focus();

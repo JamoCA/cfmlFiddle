@@ -148,11 +148,9 @@
         <!--- ===== BLOCK DIRECT ACCESS TO _payloads/ ===== --->
         <cfif findNoCase("/_payloads/", arguments.targetPage) eq 1
               or findNoCase("\_payloads\", arguments.targetPage) eq 1>
-            <!--- Allow if the shared secret token is present (server-to-server cfhttp) --->
-            <cfif structKeyExists(url, "_pt") and url._pt eq this.payloadToken>
+            <!--- Allow if the shared secret token is present via header (server-to-server cfhttp) --->
+            <cfif structKeyExists(CGI, "HTTP_X_PAYLOAD_TOKEN") and CGI.HTTP_X_PAYLOAD_TOKEN eq this.payloadToken>
                 <!--- Allowed: this is a server-to-server execution request --->
-            <cfelseif structKeyExists(CGI, "HTTP_X_PAYLOAD_TOKEN") and CGI.HTTP_X_PAYLOAD_TOKEN eq this.payloadToken>
-                <!--- Allowed via header --->
             <cfelse>
                 <cfcontent type="text/html" reset="true">
                 <cfoutput>
@@ -163,12 +161,14 @@
             </cfif>
         </cfif>
 
-        <!--- ===== HEARTBEAT: check if server-side poll is due ===== --->
+        <!--- ===== HEARTBEAT: check if server-side poll is due (runs in background thread) ===== --->
         <cfif structKeyExists(application, "lastHeartbeat")
               and dateDiff("s", application.lastHeartbeat, now()) gte application.config.serverPollInterval
               and fileExists(expandPath("api2/_heartbeat-helper.cfm"))>
             <cfset application.lastHeartbeat = now()>
-            <cfinclude template="api2/_heartbeat-helper.cfm">
+            <cfthread name="heartbeat_#createUUID()#" action="run">
+                <cfinclude template="api2/_heartbeat-helper.cfm">
+            </cfthread>
         </cfif>
 
         <cfreturn true>

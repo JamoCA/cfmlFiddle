@@ -6,6 +6,31 @@
       form.engine  — target engine key (e.g., "cf2025") or "all" for all online
     Returns JSON with execution results.
 --->
+
+<!--- Helper: extract meaningful error from HTML error pages (defined before use for cross-engine compatibility) --->
+<cffunction name="_normalizeError" access="private" returntype="string" output="false">
+    <cfargument name="errorHTML" type="string" required="true">
+    <cfset var msg = arguments.errorHTML>
+
+    <!--- Try to extract text from common error page patterns --->
+    <cfset var titleMatch = reFind("<title[^>]*>([^<]+)</title>", msg, 1, true)>
+    <cfif titleMatch.pos[1] gt 0 and arrayLen(titleMatch.pos) gte 2 and titleMatch.pos[2] gt 0>
+        <cfreturn mid(msg, titleMatch.pos[2], titleMatch.len[2])>
+    </cfif>
+
+    <!--- Strip HTML tags as fallback --->
+    <cfset msg = reReplace(msg, "<[^>]+>", " ", "all")>
+    <cfset msg = reReplace(msg, "\s+", " ", "all")>
+    <cfset msg = trim(msg)>
+
+    <!--- Truncate if too long --->
+    <cfif len(msg) gt 500>
+        <cfset msg = left(msg, 500) & "...">
+    </cfif>
+
+    <cfreturn msg>
+</cffunction>
+
 <cfset var jsonUtil = application.jsonUtil>
 <cfset var response = [:]>
 
@@ -65,7 +90,7 @@
 
 <cfloop array="#targetEngines#" index="local.engineKey">
     <cfset var engineInfo = application.serverRegistry[local.engineKey]>
-    <cfset var execURL = "http://#engineInfo['host']#:#engineInfo['port']#/#application.config.payloadsDir#/#fileName#?_pt=#application.config.payloadToken#">
+    <cfset var execURL = "http://#engineInfo['host']#:#engineInfo['port']#/#application.config.payloadsDir#/#fileName#">
 
     <cfset var result = [:]>
     <cfset result["requestId"] = requestId>
@@ -114,28 +139,3 @@
 <cfset response["success"] = true>
 <cfset response["results"] = results>
 <cfoutput>#jsonUtil.serializeJSON(response)#</cfoutput>
-
-<!--- Helper: extract meaningful error from HTML error pages --->
-<cffunction name="_normalizeError" access="private" returntype="string" output="false">
-    <cfargument name="errorHTML" type="string" required="true">
-    <cfset var msg = arguments.errorHTML>
-
-    <!--- Try to extract text from common error page patterns --->
-    <!--- Adobe CF: look for <title> or <b> with error message --->
-    <cfset var titleMatch = reFind("<title[^>]*>([^<]+)</title>", msg, 1, true)>
-    <cfif titleMatch.pos[1] gt 0 and arrayLen(titleMatch.pos) gte 2 and titleMatch.pos[2] gt 0>
-        <cfreturn mid(msg, titleMatch.pos[2], titleMatch.len[2])>
-    </cfif>
-
-    <!--- Strip HTML tags as fallback --->
-    <cfset msg = reReplace(msg, "<[^>]+>", " ", "all")>
-    <cfset msg = reReplace(msg, "\s+", " ", "all")>
-    <cfset msg = trim(msg)>
-
-    <!--- Truncate if too long --->
-    <cfif len(msg) gt 500>
-        <cfset msg = left(msg, 500) & "...">
-    </cfif>
-
-    <cfreturn msg>
-</cffunction>
