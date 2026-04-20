@@ -16,6 +16,9 @@ component {
 			print.redLine( "No server configs found in current-servers/" );
 			return;
 		}
+		arraySort( configs, function( a, b ) {
+			return compare( a, b );
+		} );
 
 		// Parse each config and build menu
 		var servers = [];

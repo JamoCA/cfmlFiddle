@@ -184,6 +184,7 @@
 		<!--- ===== SECURITY HEADERS ===== --->
 		<cfheader name="X-Content-Type-Options" value="nosniff">
 		<cfheader name="X-Frame-Options" value="SAMEORIGIN">
+		<cfheader name="Content-Security-Policy" value="frame-ancestors 'self' http://localhost:*;">
 		<cfheader name="Referrer-Policy" value="strict-origin-when-cross-origin">
 
 		<!--- ===== APPLICATION REINIT ===== --->

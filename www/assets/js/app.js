@@ -135,7 +135,10 @@
 	// ===== Status Updates (shared handler for polling and SSE) =====
 	function handleServerUpdate(resp) {
 		if (isTrue(resp.success) && resp.servers) {
-			serverStatuses = resp.servers;
+			serverStatuses = Object.keys(resp.servers).sort().reduce((acc, key) => {
+				acc[key] = resp.servers[key];
+				return acc;
+			}, {});
 			if (resp.hostServer) {
 				hostServerKey = resp.hostServer;
 				var hostStatus = serverStatuses[hostServerKey];
@@ -585,6 +588,8 @@
 	function buildResultCardsHtml(results, groupId) {
 		var forceInteractive = chkInteractive.checked;
 		var html = "";
+
+		results.sort(function(a, b) { return a.engine.localeCompare(b.engine); });
 		for (var i = 0; i < results.length; i++) {
 			var r = results[i];
 			var cardIdx = groupId + "-" + i;
