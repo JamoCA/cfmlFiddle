@@ -61,7 +61,4 @@
     "profile": "development",
     "openBrowser": false,
     "openBrowserURL": "http://localhost:12018/",
-    "scripts": {
-        "onServerInitialInstall": "cfpm install caching debugger zip"
-    }
 }
