@@ -1,0 +1,67 @@
+{
+    "name": "cfmlfiddle-cf2018",
+    "app": {
+        "cfengine": "adobe@2018",
+        "libDirs": "C:\\cfmlfiddle\\JavaLibs"
+    },
+    "dockEnable": true,
+    "trayEnable": true,
+    "json": {
+        "ansiColors": {
+            "constant": "48B9FF"
+        }
+    },
+    "customTagPaths": [
+        {
+            "physical": "C:\\cfmlfiddle\\CustomTags",
+            "primary": "physical"
+        }
+    ],
+    "jvm": {
+        "javaHome": "C:\\CFusionExtra\\jdk\\jdk-11.0.25",
+        "args": [
+            "-D:javax.xml.accessExternalDTD=''",
+            "-D:javax.xml.accessExternalSchema=''",
+            "-D:javax.xml.accessExternalStylesheet=''"
+        ]
+    },
+    "web": {
+        "host": "127.0.0.1",
+        "hostAlias": "localhost",
+        "webroot": "../www",
+        "directoryBrowsing": true,
+        "accessLogEnable": true,
+        "blockCFAdmin": false,
+        "blockSensitivePaths": true,
+        "welcomeFiles": "index.cfm,index.html,index.htm",
+        "gzipEnable": true,
+        "blockFlashRemoting": true,
+        "rewrites": {
+            "enable": true
+        },
+        "HTTP": {
+            "enable": true,
+            "port": 12018
+        },
+        "mimeTypes": {
+            "heic": "image/heic",
+            "webmanifest": "application/manifest+json",
+            "avif": "image/avif",
+            "webp": "image/webp",
+            "woff2": "font/woff2",
+            "woff": "font/woff",
+            "mjs": "text/javascript",
+            "map": "application/json"
+        },
+        "allowedExt": "webmanifest,avif,webp,woff2,woff,mjs,map"
+    },
+    "debug": true,
+    "trace": false,
+    "console": false,
+    "profile": "development",
+    "openBrowser": false,
+    "openBrowserURL": "http://localhost:12018/",
+    "scripts": {
+        "onServerInitialInstall": "cfpm install caching debugger zip"
+    }
+}
