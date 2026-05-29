@@ -18,7 +18,7 @@
         }
     ],
     "jvm": {
-        "javaHome": "C:\\CFusionExtra\\jdk\\jdk-11.0.25",
+        "javaVersion": "openjdk11",
         "args": [
             "-D:javax.xml.accessExternalDTD=''",
             "-D:javax.xml.accessExternalSchema=''",
@@ -60,8 +60,5 @@
     "console": false,
     "profile": "development",
     "openBrowser": false,
-    "openBrowserURL": "http://localhost:12018/",
-    "scripts": {
-        "onServerInitialInstall": "cfpm install caching debugger zip"
-    }
+    "openBrowserURL": "http://localhost:12018/"
 }

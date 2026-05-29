@@ -18,9 +18,9 @@
             "primary": "physical"
         }
     ],
-    "jvm": {
-        "javaHome": "C:\\Program Files\\Java\\jdk-24",
-        "args": [
+    "jvm":{
+        "javaVersion":"openjdk21",
+        "args":[
             "-D:javax.xml.accessExternalDTD=''",
             "-D:javax.xml.accessExternalSchema=''",
             "-D:javax.xml.accessExternalStylesheet=''"

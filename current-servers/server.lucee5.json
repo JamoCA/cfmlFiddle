@@ -30,7 +30,7 @@
         }
     },
     "jvm": {
-        "javaHome": "C:\\CFusionExtra\\jdk\\jdk-11.0.25",
+        "javaVersion": "openjdk11",
         "args": [
             "-D:javax.xml.accessExternalDTD=''",
             "-D:javax.xml.accessExternalSchema=''",

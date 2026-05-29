@@ -45,7 +45,7 @@ The default configuration ships with server configs for:
 
 | Engine | Versions | Ports |
 |--------|----------|-------|
-| Adobe ColdFusion | 2016, 2021, 2023, 2025 | 12016, 12021, 12023, 12025 |
+| Adobe ColdFusion | 2016, 2018, 2021, 2023, 2025 | 12016, 12018, 12021, 12023, 12025 |
 | Lucee | 5, 6, 7 | 13005, 13006, 13007 |
 | BoxLang | latest (native, Adobe compat, Lucee compat) | 14000, 14001, 14002 |
 
@@ -105,7 +105,7 @@ All settings live in `config.json` in the project root (above `www/`). The app r
 
 Server configs live in `current-servers/`. Each `server.*.json` file defines a CommandBox server instance. Copy one to add a new engine.
 
-Each config includes a `jvm.javaHome` path that points to the Java installation used by that engine. Different engines may require different Java versions (e.g. Adobe CF2016 needs Java 11, while BoxLang and CF2025 need Java 21+). If you have multiple JDKs installed, edit `javaHome` in each server config to match. If omitted, CommandBox uses whatever Java it was started with.
+Each config includes a CommandBox `javaVersion` configuration element which points to the latest Java version known to be supported by that engine, and causes Commandbox to download and implement that JVM for that server. Different CFML engines support different Java versions (e.g. Adobe CF2023 currently supports only Java 17, while CF2025, Lucee 6, and BoxLang currently support Java 21, and Lucee 7 supports Java 25). You can change that `javaVersion` value to suit your own needs. Or if you may wish to point to your own JVM location you can use instead the CommandBox `javaHome` configuration element. If both are omitted, CommandBox uses whatever Java it was started with.
 
 The `customTagPaths` and `app.libDirs` paths reference the `CustomTags/` and `JavaLibs/` directories in the project root. If you install cfmlFiddle somewhere other than the default location, update these paths in each server config.
 
