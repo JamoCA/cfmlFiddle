@@ -1,42 +1,46 @@
 <!---
-    snippet-load.cfm
-    Returns the content of a selected snippet file.
-    Expects: url.file (filename only, no path traversal allowed)
+	snippet-load.cfm
+	Returns the content of a selected snippet file.
+	Expects: url.file (filename only, no path traversal allowed)
 --->
-<cfset var jsonUtil = application.jsonUtil>
-<cfset var response = [:]>
+<cfset _startTick = getTickCount()>
+<cfset response = [:]>
 
-<cfif not structKeyExists(url, "file") or not len(trim(url.file))>
-    <cfset response["success"] = false>
-    <cfset response["error"] = "No file specified.">
-    <cfoutput>#jsonUtil.serializeJSON(response)#</cfoutput>
-    <cfabort>
+<cfif !structKeyExists(url, "file") || !len(trim(url.file))>
+	<cfset response["success"] = application.jFalse>
+	<cfset response["error"] = "No file specified.">
+	<cfset response["duration"] = javacast("int", getTickCount() - _startTick)>
+<cfoutput>#application.jsonUtil.serializeJSON(var=response, strictMapping=true)#</cfoutput>
+	<cfabort>
 </cfif>
 
-<!--- Security: strip any path components — only allow bare filenames --->
-<cfset var fileName = listLast(replace(url.file, "\", "/", "all"), "/")>
+<!--- Security: strip any path components - only allow bare filenames --->
+<cfset fileName = listLast(replace(url.file, "\", "/", "all"), "/")>
 
 <!--- Reject if filename contains suspicious characters --->
 <cfif reFind("[^a-zA-Z0-9._\-]", fileName)>
-    <cfset response["success"] = false>
-    <cfset response["error"] = "Invalid filename.">
-    <cfoutput>#jsonUtil.serializeJSON(response)#</cfoutput>
-    <cfabort>
+	<cfset response["success"] = application.jFalse>
+	<cfset response["error"] = "Invalid filename.">
+	<cfset response["duration"] = javacast("int", getTickCount() - _startTick)>
+<cfoutput>#application.jsonUtil.serializeJSON(var=response, strictMapping=true)#</cfoutput>
+	<cfabort>
 </cfif>
 
-<cfset var snippetsPath = expandPath(application.config.snippetsDir)>
-<cfset var filePath = snippetsPath & "/" & fileName>
+<cfset snippetsPath = application.config.snippetsPath>
+<cfset filePath = snippetsPath & "/" & fileName>
 
-<cfif not fileExists(filePath)>
-    <cfset response["success"] = false>
-    <cfset response["error"] = "File not found: " & encodeForHTML(fileName)>
-    <cfoutput>#jsonUtil.serializeJSON(response)#</cfoutput>
-    <cfabort>
+<cfif !fileExists(filePath)>
+	<cfset response["success"] = application.jFalse>
+	<cfset response["error"] = "File not found: " & encodeForHTML(fileName)>
+	<cfset response["duration"] = javacast("int", getTickCount() - _startTick)>
+<cfoutput>#application.jsonUtil.serializeJSON(var=response, strictMapping=true)#</cfoutput>
+	<cfabort>
 </cfif>
 
-<cfset var content = fileRead(filePath, "utf-8")>
+<cfset content = fileRead(filePath, "utf-8")>
 
-<cfset response["success"] = true>
+<cfset response["success"] = application.jTrue>
 <cfset response["file"] = fileName>
 <cfset response["content"] = content>
-<cfoutput>#jsonUtil.serializeJSON(response)#</cfoutput>
+<cfset response["duration"] = javacast("int", getTickCount() - _startTick)>
+<cfoutput>#application.jsonUtil.serializeJSON(var=response, strictMapping=true)#</cfoutput>

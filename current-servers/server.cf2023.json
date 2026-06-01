@@ -1,24 +1,25 @@
 {
-    "name":"cf2023",
-    "app":{
-        "cfengine":"adobe@2023",
-        "libDirs":"c:\\CFusionExtra\\java,c:\\CFusionExtra\\java2021"
+    "name": "cfmlfiddle-cf2023",
+    "app": {
+        "cfengine": "adobe@2023",
+        "libDirs": "C:\\cfmlfiddle\\JavaLibs"
     },
-    "dockEnable":true,
-    "trayEnable":true,
-    "json":{
-        "ansiColors":{
-            "constant":"48B9FF"
+    "dockEnable": true,
+    "trayEnable": true,
+    "json": {
+        "ansiColors": {
+            "constant": "48B9FF"
         }
     },
-    "customTagPaths":[
+    "customTagPaths": [
         {
-            "physical":"c:\\CFusionExtra\\customtags",
-            "primary":"physical"
+            "physical": "C:\\cfmlfiddle\\CustomTags",
+            "primary": "physical"
         }
     ],
-    "jvm":{
-        "args":[
+    "jvm": {
+        "javaVersion": "openjdk17",
+        "args": [
             "-D:javax.xml.accessExternalDTD=''",
             "-D:javax.xml.accessExternalSchema=''",
             "-D:javax.xml.accessExternalStylesheet=''",
@@ -27,38 +28,43 @@
             "--add-opens=java.base/java.util.stream=ALL-UNNAMED"
         ]
     },
-    "web":{
-        "host":"0.0.0.0",
-        "hostAlias":"cf2023.local",
-        "webroot":"www",
-        "directoryBrowsing":true,
-        "accessLogEnable":true,
-        "blockCFAdmin":false,
-        "blockSensitivePaths":true,
-        "welcomeFiles":"index.cfm,index.html,index.htm",
-        "gzipEnable":true,
-        "blockFlashRemoting":true,
-        "rewrites":{
-            "enable":true
+    "web": {
+        "host": "127.0.0.1",
+        "hostAlias": "localhost",
+        "webroot": "../www",
+        "directoryBrowsing": true,
+        "accessLogEnable": true,
+        "blockCFAdmin": false,
+        "blockSensitivePaths": true,
+        "welcomeFiles": "index.cfm,index.html,index.htm",
+        "gzipEnable": true,
+        "blockFlashRemoting": true,
+        "rewrites": {
+            "enable": true
         },
-        "aliases":{
-            "/_scriptsGlobal":"c:\\Commandbox\\www\\_scriptsGlobal"
+        "HTTP": {
+            "enable": true,
+            "port": 12023
         },
-        "HTTP":{
-            "enable":true,
-            "port":2023
+        "mimeTypes": {
+            "heic": "image/heic",
+            "webmanifest": "application/manifest+json",
+            "avif": "image/avif",
+            "webp": "image/webp",
+            "woff2": "font/woff2",
+            "woff": "font/woff",
+            "mjs": "text/javascript",
+            "map": "application/json"
         },
-        "mimeTypes":{
-            "heic":"image/heic"
-        }
+        "allowedExt": "webmanifest,avif,webp,woff2,woff,mjs,map"
     },
-    "debug":true,
-    "trace":false,
-    "console":false,
-    "profile":"development",
-    "openBrowser":true,
-    "openBrowserURL":"http://cf2023.local:2023/",
-    "scripts":{
-        "onServerInitialInstall":"cfpm install caching debugger"
+    "debug": true,
+    "trace": false,
+    "console": false,
+    "profile": "development",
+    "openBrowser": false,
+    "openBrowserURL": "http://localhost:12023/",
+    "scripts": {
+        "onServerInitialInstall": "cfpm install caching debugger zip"
     }
 }

@@ -1,6 +1,7 @@
-<cfscript>
-// Hello World — basic CFFiddle test
-writeOutput("<h2>Hello from CFFiddle!</h2>");
-writeOutput("<p>Engine: " & server.coldfusion.productname & " " & server.coldfusion.productversion & "</p>");
-writeOutput("<p>Timestamp: " & dateTimeFormat(now(), "yyyy-MM-dd HH:nn:ss") & "</p>");
-</cfscript>
+<!--- Hello World - basic CFMLFiddle test --->
+<cfoutput>
+	<h2>Hello from CFMLFiddle!</h2>
+	<p><b>Engine:</b> <cfif structKeyExists(server,"coldfusion")>#server.coldfusion.productname# #server.coldfusion.productversion#<cfelseif structKeyExists(server,"boxlang")>BoxLang #server.boxlang.version#<cfelse>Unknown</cfif></p>
+	<p><b>Timestamp:</b> #dateTimeFormat(now(), "iso")#</p>
+	<p><b>IP Address:</b> #CGI.REMOTE_ADDR#</p>
+</cfoutput>

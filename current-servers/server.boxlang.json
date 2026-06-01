@@ -1,66 +1,85 @@
 {
-    "name":"boxlang",
-    "app":{
-        "cfengine":"boxlang@be",
-        "libDirs":"c:\\CFusionExtra\\java,c:\\CFusionExtra\\java2021",
-        "showErrors":true
+    "name": "cfmlfiddle-boxlang",
+    "app": {
+        "cfengine": "boxlang@be",
+        "libDirs": "C:\\cfmlfiddle\\JavaLibs",
+        "showErrors": true
     },
-    "dockEnable":true,
-    "trayEnable":true,
-    "json":{
-        "ansiColors":{
-            "constant":"48B9FF"
+    "dockEnable": true,
+    "trayEnable": true,
+    "json": {
+        "ansiColors": {
+            "constant": "48B9FF"
         }
     },
-    "customTagPaths":[
+    "customTagPaths": [
         {
-            "physical":"c:\\CFusionExtra\\customtags",
-            "primary":"physical"
+            "physical": "C:\\cfmlfiddle\\CustomTags",
+            "primary": "physical"
         }
     ],
     "jvm":{
-        "javaHome":"C:\\Program Files\\Java\\jdk-24",
+        "javaVersion":"openjdk21",
         "args":[
             "-D:javax.xml.accessExternalDTD=''",
             "-D:javax.xml.accessExternalSchema=''",
             "-D:javax.xml.accessExternalStylesheet=''"
         ],
-        "javaVersion":"openjdk21"
+        "javaVersion": "openjdk21"
     },
-    "web":{
-        "host":"0.0.0.0",
-        "hostAlias":"boxlang.local",
-        "webroot":"www",
-        "directoryBrowsing":true,
-        "accessLogEnable":true,
-        "blockCFAdmin":false,
-        "blockSensitivePaths":true,
-        "welcomeFiles":"index.cfm,index.html,index.htm",
-        "gzipEnable":true,
-        "blockFlashRemoting":true,
-        "rewrites":{
-            "enable":true
+    "web": {
+        "host": "127.0.0.1",
+        "hostAlias": "localhost",
+        "webroot": "../www",
+        "directoryBrowsing": true,
+        "accessLogEnable": true,
+        "blockCFAdmin": false,
+        "blockSensitivePaths": true,
+        "welcomeFiles": "index.cfm,index.html,index.htm",
+        "gzipEnable": true,
+        "blockFlashRemoting": true,
+        "rewrites": {
+            "enable": true
         },
-        "aliases":{
-            "/_scriptsGlobal":"c:\\Commandbox\\www\\_scriptsGlobal"
+        "HTTP": {
+            "enable": true,
+            "port": 14000
         },
-        "HTTP":{
-            "enable":true,
-            "port":4000
+        "mimeTypes": {
+            "heic": "image/heic",
+            "webmanifest": "application/manifest+json",
+            "avif": "image/avif",
+            "webp": "image/webp",
+            "woff2": "font/woff2",
+            "woff": "font/woff",
+            "mjs": "text/javascript",
+            "map": "application/json"
         },
-        "mimeTypes":{
-            "heic":"image/heic"
-        }
+        "allowedExt": "webmanifest,avif,webp,woff2,woff,mjs,map"
     },
-    "debug":true,
-    "trace":false,
-    "console":false,
-    "profile":"development",
-    "openBrowser":true,
-    "openBrowserURL":"http://boxlang.local:4000/",
-    "boxlang":{
-        "compatibility":{
-            "adobe":true
+    "debug": true,
+    "trace": false,
+    "console": false,
+    "profile": "development",
+    "openBrowser": false,
+    "openBrowserURL": "http://localhost:14000/",
+    "scripts": {
+        "onServerInitialInstall": "install bx-compat-cfml,bx-zip,bx-debug"
+    },
+    "boxlang": {
+        "compatibility": {
+            "adobe": true
+        },
+        "modules": {
+            "bx-compat-cfml": {
+                "enabled": true,
+                "engine": "adobe",
+                "clientManagement": true,
+                "nullIsUndefined": true,
+                "booleansAreNumbers": true,
+                "lenientJSONParsing": false,
+                "queryNullToEmpty": true
+            }
         }
     }
 }

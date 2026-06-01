@@ -1,141 +1,197 @@
 <!---
-    execute.cfm
-    Receives CFML payload and target engine(s), executes via cfhttp.
-    Expects:
-      form.code    — the CFML source code
-      form.engine  — target engine key (e.g., "cf2025") or "all" for all online
-    Returns JSON with execution results.
+	execute.cfm
+	Receives CFML payload and target engine(s), executes via cfhttp.
+	Expects:
+	form.code        - the CFML source code (required unless payloadFile is provided)
+	form.payloadFile - existing payload filename to re-execute (alternative to code)
+	form.engine      - target engine key (e.g., "cf2025") or "all" for all online
+	Returns JSON with execution results.
 --->
 
 <!--- Helper: extract meaningful error from HTML error pages (defined before use for cross-engine compatibility) --->
 <cffunction name="_normalizeError" access="private" returntype="string" output="false">
-    <cfargument name="errorHTML" type="string" required="true">
-    <cfset var msg = arguments.errorHTML>
+	<cfargument name="errorHTML" type="string" required="true">
+	<cfset var msg = arguments.errorHTML>
 
-    <!--- Try to extract text from common error page patterns --->
-    <cfset var titleMatch = reFind("<title[^>]*>([^<]+)</title>", msg, 1, true)>
-    <cfif titleMatch.pos[1] gt 0 and arrayLen(titleMatch.pos) gte 2 and titleMatch.pos[2] gt 0>
-        <cfreturn mid(msg, titleMatch.pos[2], titleMatch.len[2])>
-    </cfif>
+	<!--- Try to extract text from common error page patterns --->
+	<cfset var titleMatch = reFind("<title[^>]*>([^<]+)</title>", msg, 1, true)>
+	<cfif titleMatch.pos[1] gt 0 && arrayLen(titleMatch.pos) gte 2 && titleMatch.pos[2] gt 0>
+		<cfreturn mid(msg, titleMatch.pos[2], titleMatch.len[2])>
+	</cfif>
 
-    <!--- Strip HTML tags as fallback --->
-    <cfset msg = reReplace(msg, "<[^>]+>", " ", "all")>
-    <cfset msg = reReplace(msg, "\s+", " ", "all")>
-    <cfset msg = trim(msg)>
+	<!--- Strip HTML tags as fallback --->
+	<cfset msg = reReplace(msg, "<[^>]+>", " ", "all")>
+	<cfset msg = reReplace(msg, "\s+", " ", "all")>
+	<cfset msg = trim(msg)>
 
-    <!--- Truncate if too long --->
-    <cfif len(msg) gt 500>
-        <cfset msg = left(msg, 500) & "...">
-    </cfif>
+	<!--- Truncate if too long --->
+	<cfif len(msg) gt 500>
+		<cfset msg = left(msg, 500) & "...">
+	</cfif>
 
-    <cfreturn msg>
+	<cfreturn msg>
 </cffunction>
 
-<cfset var jsonUtil = application.jsonUtil>
-<cfset var response = [:]>
+<cfset _startTick = getTickCount()>
+<cfset response = [:]>
 
-<!--- Validate inputs --->
-<cfif not structKeyExists(form, "code") or not len(trim(form.code))>
-    <cfset response["success"] = false>
-    <cfset response["error"] = "No code provided.">
-    <cfoutput>#jsonUtil.serializeJSON(response)#</cfoutput>
-    <cfabort>
+<!--- Validate engine --->
+<cfif !structKeyExists(form, "engine") || !len(trim(form.engine))>
+	<cfset response["success"] = application.jFalse>
+	<cfset response["error"] = "No engine specified.">
+	<cfset response["duration"] = javacast("int", getTickCount() - _startTick)>
+	<cfoutput>#application.jsonUtil.serializeJSON(var=response, strictMapping=true)#</cfoutput>
+	<cfabort>
 </cfif>
 
-<cfif not structKeyExists(form, "engine") or not len(trim(form.engine))>
-    <cfset response["success"] = false>
-    <cfset response["error"] = "No engine specified.">
-    <cfoutput>#jsonUtil.serializeJSON(response)#</cfoutput>
-    <cfabort>
+<cfset engineParam = trim(form.engine)>
+<cfset payloadsPath = application.config.payloadsPath>
+
+<!--- Support re-running an existing payload file (refresh) --->
+<cfif structKeyExists(form, "payloadFile") && len(trim(form.payloadFile))>
+	<cfset fileName = trim(form.payloadFile)>
+	<!--- Validate filename format and existence --->
+	<cfif reFind("[^a-zA-Z0-9_\-\.]", fileName) || !fileExists(payloadsPath & "/" & fileName)>
+		<cfset response["success"] = application.jFalse>
+		<cfset response["error"] = "Payload file not found.">
+		<cfset response["duration"] = javacast("int", getTickCount() - _startTick)>
+		<cfoutput>#application.jsonUtil.serializeJSON(var=response, strictMapping=true)#</cfoutput>
+		<cfabort>
+	</cfif>
+	<cfset requestId = getTickCount()>
+<cfelse>
+	<!--- Validate code input --->
+	<cfif !structKeyExists(form, "code") || !len(trim(form.code))>
+		<cfset response["success"] = application.jFalse>
+		<cfset response["error"] = "No code provided.">
+		<cfset response["duration"] = javacast("int", getTickCount() - _startTick)>
+		<cfoutput>#application.jsonUtil.serializeJSON(var=response, strictMapping=true)#</cfoutput>
+		<cfabort>
+	</cfif>
+
+	<cfset code = form.code>
+
+	<!--- Validate that payload contains only text content (reject null bytes and binary control chars) --->
+	<cfif reFind("[\x00-\x08\x0E-\x1F]", code)>
+		<cfset response["success"] = application.jFalse>
+		<cfset response["error"] = "BINARY_CONTENT">
+		<cfset response["duration"] = javacast("int", getTickCount() - _startTick)>
+		<cfoutput>#application.jsonUtil.serializeJSON(var=response, strictMapping=true)#</cfoutput>
+		<cfabort>
+	</cfif>
+
+	<!--- Prepend server-side request timeout to the payload so the target
+			engine aborts execution if it exceeds the configured limit. --->
+	<cfset execTimeout = application.config.executionTimeout>
+	<cfif execTimeout gt 0>
+		<cfset code = '<cfsetting requesttimeout="#execTimeout#">' & chr(10) & code>
+	</cfif>
+
+	<!--- Generate content hash from code (includes timeout prefix, so
+			same code with different timeout = different hash/file) --->
+	<cfset codeHash = abs(trim(code).hashCode())>
+
+	<!--- Check if a file with this hash already exists --->
+	<cfset fileName = "">
+	<cfset existingFiles = directoryList(payloadsPath, false, "name", "*-#codeHash#.cfm")>
+	<cfif arrayLen(existingFiles)>
+		<!--- Reuse existing file --->
+		<cfset fileName = existingFiles[1]>
+	<cfelse>
+		<!--- Create new file: yyyymmddhhNNsslll-hashCode.cfm --->
+		<cfset timestamp = dateTimeFormat(now(), "yyyyMMddHHnnsslll")>
+		<cfset fileName = timestamp & "-" & codeHash & ".cfm">
+		<cfset fileWrite(payloadsPath & "/" & fileName, code, "utf-8")>
+	</cfif>
+
+	<cfset requestId = getTickCount()>
 </cfif>
-
-<cfset var code = form.code>
-<cfset var engineParam = trim(form.engine)>
-<cfset var payloadsPath = expandPath(application.config.payloadsDir)>
-
-<!--- Generate the payload filename: yyyymmddhhNNsslll-UUID.cfm --->
-<cfset var timestamp = dateTimeFormat(now(), "yyyyMMddHHnnsslll")>
-<cfset var requestId = createUUID()>
-<cfset var fileName = timestamp & "-" & requestId & ".cfm">
-<cfset var filePath = payloadsPath & "/" & fileName>
-
-<!--- Write the payload file --->
-<cfset fileWrite(filePath, code, "utf-8")>
 
 <!--- Determine target engines --->
-<cfset var targetEngines = []>
+<cfset targetEngines = []>
 <cfif engineParam eq "all">
-    <cfloop collection="#application.serverStatuses#" item="local.sKey">
-        <cfif application.serverStatuses[local.sKey]["status"] eq "online">
-            <cfset arrayAppend(targetEngines, local.sKey)>
-        </cfif>
-    </cfloop>
+	<cfloop collection="#application.serverStatuses#" item="sKey">
+		<cfif application.serverStatuses[sKey]["status"] eq "online">
+			<cfset arrayAppend(targetEngines, sKey)>
+		</cfif>
+	</cfloop>
 <cfelse>
-    <cfif structKeyExists(application.serverRegistry, engineParam)>
-        <cfset arrayAppend(targetEngines, engineParam)>
-    <cfelse>
-        <cfset response["success"] = false>
-        <cfset response["error"] = "Unknown engine: " & encodeForHTML(engineParam)>
-        <cfoutput>#jsonUtil.serializeJSON(response)#</cfoutput>
-        <cfabort>
-    </cfif>
+	<cfif structKeyExists(application.serverRegistry, engineParam)>
+		<cfset arrayAppend(targetEngines, engineParam)>
+	<cfelse>
+		<cfset response["success"] = application.jFalse>
+		<cfset response["error"] = "Unknown engine: " & encodeForHTML(engineParam)>
+		<cfset response["duration"] = javacast("int", getTickCount() - _startTick)>
+		<cfoutput>#application.jsonUtil.serializeJSON(var=response, strictMapping=true)#</cfoutput>
+		<cfabort>
+	</cfif>
 </cfif>
 
 <!--- Execute on each target engine --->
-<cfset var results = []>
-<cfset var execTimeout = application.config.executionTimeout>
+<cfset results = []>
+<cfset execTimeout = application.config.executionTimeout>
 <cfif execTimeout eq 0>
-    <cfset execTimeout = 300><!--- default cfhttp timeout when disabled --->
+	<cfset execTimeout = 300><!--- default cfhttp timeout when disabled --->
 </cfif>
 
-<cfloop array="#targetEngines#" index="local.engineKey">
-    <cfset var engineInfo = application.serverRegistry[local.engineKey]>
-    <cfset var execURL = "http://#engineInfo['host']#:#engineInfo['port']#/#application.config.payloadsDir#/#fileName#">
+<cfset signedToken = hash(fileName & application.config.payloadToken, "SHA-256")>
 
-    <cfset var result = [:]>
-    <cfset result["requestId"] = requestId>
-    <cfset result["timestamp"] = dateTimeFormat(now(), "yyyy-MM-dd'T'HH:nn:ss.lllZ")>
-    <cfset result["engine"] = local.engineKey>
-    <cfset result["cfengine"] = engineInfo["cfengine"]>
+<cfloop array="#targetEngines#" index="engineKey">
+	<cfset engineInfo = application.serverRegistry[engineKey]>
+	<cfset execURL = "http://#engineInfo['host']#:#engineInfo['port']#/#application.config.payloadsDir#/#fileName#">
+	<cfset interactiveURL = execURL & "?_tk=" & signedToken>
 
-    <cfset var startTick = getTickCount()>
+	<cfset result = [
+		"requestId": requestId,
+		"timestamp": dateTimeFormat(now(), application.timestampMask),
+		"interactiveURL": interactiveURL,
+		"payloadFile": fileName,
+		"engine": engineKey,
+		"cfengine": engineInfo["cfengine"]
+	]>
 
-    <cftry>
-        <cfhttp url="#execURL#" method="GET" timeout="#execTimeout#" result="local.httpResult">
-            <cfhttpparam type="header" name="X-Payload-Token" value="#application.config.payloadToken#">
-        </cfhttp>
+	<cfset startTick = getTickCount()>
 
-        <cfset var duration = getTickCount() - startTick>
-        <cfset result["duration"] = duration>
+	<cftry>
+		<cfhttp url="#execURL#" method="GET" timeout="#execTimeout#" result="httpResult" userAgent="#application.userAgent#">
+			<cfhttpparam type="header" name="X-Payload-Token" value="#application.config.payloadToken#">
+		</cfhttp>
 
-        <cfif val(local.httpResult.statusCode) gte 200 and val(local.httpResult.statusCode) lt 400>
-            <cfset result["success"] = true>
-            <cfset result["output"] = local.httpResult.fileContent>
-        <cfelse>
-            <!--- Uncaught error: normalize --->
-            <cfset result["success"] = false>
-            <cfset var errorBody = local.httpResult.fileContent>
-            <cfset result["error"] = [:]>
-            <cfset result["error"]["statusCode"] = local.httpResult.statusCode>
-            <cfset result["error"]["message"] = _normalizeError(errorBody)>
-            <cfset result["error"]["raw"] = errorBody>
-        </cfif>
-    <cfcatch type="any">
-        <cfset var duration = getTickCount() - startTick>
-        <cfset result["duration"] = duration>
-        <cfset result["success"] = false>
-        <cfset result["error"] = [:]>
-        <cfset result["error"]["statusCode"] = "0">
-        <cfset result["error"]["message"] = cfcatch.message>
-        <cfif structKeyExists(cfcatch, "detail")>
-            <cfset result["error"]["detail"] = cfcatch.detail>
-        </cfif>
-    </cfcatch>
-    </cftry>
+		<cfset duration = getTickCount() - startTick>
+		<cfset result["duration"] = javacast("int", duration)>
 
-    <cfset arrayAppend(results, result)>
+		<cfif val(httpResult.statusCode) gte 200 && val(httpResult.statusCode) lt 400>
+			<cfset result["success"] = application.jTrue>
+			<cfset result["output"] = httpResult.fileContent>
+		<cfelse>
+			<!--- Uncaught error: normalize --->
+			<cfset result["success"] = application.jFalse>
+			<cfset errorBody = httpResult.fileContent>
+			<cfset result["error"] = [
+				"statusCode": httpResult.statusCode,
+				"message": _normalizeError(errorBody),
+				"raw": errorBody
+			]>
+		</cfif>
+	<cfcatch type="any">
+		<cfset duration = getTickCount() - startTick>
+		<cfset result["duration"] = javacast("int", duration)>
+		<cfset result["success"] = application.jFalse>
+		<cfset result["error"] = [
+			"statusCode": "0",
+			"message": cfcatch.message
+		]>
+		<cfif structKeyExists(cfcatch, "detail")>
+			<cfset result["error"]["detail"] = cfcatch.detail>
+		</cfif>
+	</cfcatch>
+	</cftry>
+
+	<cfset arrayAppend(results, result)>
 </cfloop>
 
-<cfset response["success"] = true>
+<cfset response["success"] = application.jTrue>
 <cfset response["results"] = results>
-<cfoutput>#jsonUtil.serializeJSON(response)#</cfoutput>
+<cfset response["payloadCount"] = javacast("int", arrayLen(directoryList(payloadsPath, false, "name", "*.cfm")))>
+<cfset response["duration"] = javacast("int", getTickCount() - _startTick)>
+<cfoutput>#application.jsonUtil.serializeJSON(var=response, strictMapping=true)#</cfoutput>

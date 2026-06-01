@@ -1,0 +1,84 @@
+{
+    "name": "cfmlfiddle-boxlang-adobe",
+    "app": {
+        "cfengine": "boxlang@be",
+        "libDirs": "C:\\cfmlfiddle\\JavaLibs",
+        "showErrors": true
+    },
+    "dockEnable": true,
+    "trayEnable": true,
+    "json": {
+        "ansiColors": {
+            "constant": "48B9FF"
+        }
+    },
+    "customTagPaths": [
+        {
+            "physical": "C:\\cfmlfiddle\\CustomTags",
+            "primary": "physical"
+        }
+    ],
+    "jvm": {
+        "javaVersion": "openjdk25",
+        "args": [
+            "-D:javax.xml.accessExternalDTD=''",
+            "-D:javax.xml.accessExternalSchema=''",
+            "-D:javax.xml.accessExternalStylesheet=''"
+        ]
+    },
+    "web": {
+        "host": "127.0.0.1",
+        "hostAlias": "localhost",
+        "webroot": "../www",
+        "directoryBrowsing": true,
+        "accessLogEnable": true,
+        "blockCFAdmin": false,
+        "blockSensitivePaths": true,
+        "welcomeFiles": "index.cfm,index.html,index.htm",
+        "gzipEnable": true,
+        "blockFlashRemoting": true,
+        "rewrites": {
+            "enable": true
+        },
+        "HTTP": {
+            "enable": true,
+            "port": 14001
+        },
+        "mimeTypes": {
+            "heic": "image/heic",
+            "webmanifest": "application/manifest+json",
+            "avif": "image/avif",
+            "webp": "image/webp",
+            "woff2": "font/woff2",
+            "woff": "font/woff",
+            "mjs": "text/javascript",
+            "map": "application/json"
+        },
+        "allowedExt": "webmanifest,avif,webp,woff2,woff,mjs,map"
+    },
+    "debug": true,
+    "trace": false,
+    "console": false,
+    "profile": "development",
+    "openBrowser": false,
+    "openBrowserURL": "http://localhost:14001/",
+    "scripts": {
+        "onServerInitialInstall": "install bx-compat-cfml,bx-zip,bx-debug"
+    },
+    "boxlang": {
+        "compatibility": {
+            "adobe": true
+        },
+        "modules": {
+            "bx-compat-cfml": {
+                "enabled": true,
+                "engine": "adobe",
+                "clientManagement": true,
+                "nullIsUndefined": true,
+                "booleansAreNumbers": true,
+                "lenientJSONParsing": false,
+                "queryNullToEmpty": true
+            }
+        }
+    }
+}

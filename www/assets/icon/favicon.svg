@@ -1,0 +1,41 @@
+<svg xmlns="http://www.w3.org/2000/svg" version="1.1" id="Capa_1" viewBox="0 0 326.09 326.09" width="326.09" height="326.09"><metadata><rdf:RDF xmlns:rdf="http://www.w3.org/1999/02/22-rdf-syntax-ns#" xmlns:dc="http://purl.org/dc/elements/1.1/"><rdf:Description><dc:creator>RealFaviconGenerator</dc:creator><dc:source>https://realfavicongenerator.net</dc:source></rdf:Description></rdf:RDF></metadata><defs>
+    <style>
+      .st0 {
+        fill: #d8211d;
+      }
+
+      .st1 {
+        fill: #67b7dc;
+      }
+
+      .st2 {
+        fill: #67aa5c;
+      }
+
+      .st3 {
+        stroke: #10582b;
+      }
+
+      .st3, .st4, .st5, .st6 {
+        fill: #fff;
+        stroke-miterlimit: 10;
+        stroke-width: 5px;
+      }
+
+      .st4 {
+        stroke: #73001d;
+      }
+
+      .st5 {
+        stroke: #516472;
+      }
+
+      .st6 {
+        stroke: #105a7a;
+      }
+
+      .st7 {
+        fill: #a3b8cf;
+      }
+    </style>
+  </defs><rect class="st0" width="163.12" height="163.12"></rect><rect class="st1" x="162.97" width="163.12" height="163.12"></rect><rect class="st7" x="162.97" y="162.97" width="163.12" height="163.12"></rect><rect class="st2" y="162.97" width="163.12" height="163.12"></rect><path class="st4" d="M55.14,127.91c-8.75-4.65-15.63-11.12-20.62-19.42-5-8.3-7.5-17.7-7.5-28.2s2.5-19.9,7.5-28.2c5-8.3,11.87-14.77,20.62-19.42,8.75-4.65,18.62-6.98,29.62-6.98,9.6,0,18.25,1.7,25.95,5.1,7.7,3.4,14.1,8.3,19.2,14.7l-18.9,17.1c-6.8-8.2-15.05-12.3-24.75-12.3-5.7,0-10.78,1.25-15.23,3.75-4.45,2.5-7.9,6.03-10.35,10.58-2.45,4.55-3.67,9.78-3.67,15.67s1.22,11.13,3.67,15.67c2.45,4.55,5.9,8.08,10.35,10.58,4.45,2.5,9.52,3.75,15.23,3.75,9.7,0,17.95-4.1,24.75-12.3l18.9,17.1c-5.1,6.4-11.5,11.3-19.2,14.7-7.7,3.4-16.35,5.1-25.95,5.1-11,0-20.88-2.33-29.62-6.98Z"></path><path class="st6" d="M237.2,50.93v23.1h46.35v22.95h-46.35v36h-29.7V27.98h82.35v22.95h-52.65Z"></path><path class="st3" d="M116.11,299.62l-.3-55.65-27,45.3h-13.2l-26.85-43.8v54.15h-27.45v-105h24.45l36.9,60.6,36-60.6h24.45l.3,105h-27.3Z"></path><path class="st5" d="M206.11,194.61h29.7v81.45h50.1v23.55h-79.8v-105Z"></path></svg>

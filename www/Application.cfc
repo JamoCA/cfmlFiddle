@@ -1,177 +1,290 @@
 <cfcomponent output="false">
 
-    <!--- Application identity --->
-    <cfset this.name = "CFFiddle_" & hash(getCurrentTemplatePath())>
-    <cfset this.sessionManagement = true>
-    <cfset this.sessionTimeout = createTimeSpan(0, 2, 0, 0)>
+	<!--- Application identity --->
+	<cfset this.version = "1.0.0">
+	<cfset this.name = "CFMLFiddle_" & hash(getCurrentTemplatePath())>
+	<cfset this.sessionManagement = false>
 
-    <!--- Map to JSONUtil (outside webroot) --->
-    <cfset this.mappings["/jsonutil"] = expandPath("../JSONUtil")>
+	<!--- Map to JSONUtil (outside webroot) --->
+	<cfset this.mappings["/jsonutil"] = createObject("java","java.io.File").init(
+		getDirectoryFromPath(getCurrentTemplatePath()), "../JSONUtil"
+	).getCanonicalPath()>
 
-    <!--- ============================================================
-          CONFIGURATION — Edit these values to customize the app
-          ============================================================ --->
 
-    <!--- IP Allowlist: comma-delimited list.
-          Matching rules:
-            "*"           = allow all IPs
-            exact match   = "192.168.1.50"
-            starts-with   = "192.168.1" matches 192.168.1.*
-          Default: localhost only --->
-    <cfset this.allowedIPs = "127.0.0.1,::1,0:0:0:0:0:0:0:1">
 
-    <!--- Execution timeout in seconds (0 = disabled). Adjustable in UI. --->
-    <cfset this.executionTimeout = 0>
+	<!--- ============================================================
+		CONFIGURATION - loaded from ../config.json
+		Edit config.json (above webroot) to customize the app.
+		Use Reinit in the UI to reload after changes.
+		============================================================ --->
+	<cfset local.configPath = createObject("java","java.io.File").init(
+		getDirectoryFromPath(getCurrentTemplatePath()), "../config.json"
+	).getCanonicalPath()>
+	<cfif fileExists(local.configPath)>
+		<cfset local.cfg = deserializeJSON(fileRead(local.configPath, "utf-8"))>
+	<cfelse>
+		<cfset local.cfg = {}>
+	</cfif>
 
-    <!--- Server-side heartbeat interval in seconds --->
-    <cfset this.serverPollInterval = 30>
+	<cfset this.allowedIPs = local.cfg.allowedIPs ?: "127.0.0.1,::1,0:0:0:0:0:0:0:1">
+	<cfset this.executionTimeout = local.cfg.executionTimeout ?: 0>
+	<cfset this.serverPollInterval = local.cfg.serverPollInterval ?: 30>
+	<cfset this.clientPollInterval = local.cfg.clientPollInterval ?: 10>
+	<cfset this.startupTimeout = local.cfg.startupTimeout ?: 60>
+	<cfset this.editorTheme = local.cfg.editorTheme ?: "monokai">
+	<cfset this.serverNamePrefix = local.cfg.serverNamePrefix ?: "cfmlfiddle-">
+	<cfset this.boxExe = local.cfg.boxExe ?: "box">
+	<cfset this.payloadsDir = local.cfg.payloadsDir ?: "_payloads">
+	<cfset this.archiveDir = local.cfg.archiveDir ?: "../archive">
+	<cfset this.snippetsDir = local.cfg.snippetsDir ?: "../snippets">
+	<cfset this.templateServersDir = local.cfg.templateServersDir ?: "../current-servers">
+	<cfset this.customTagsDir = local.cfg.customTagsDir ?: "../CustomTags">
+	<cfset this.javaLibsDir = local.cfg.javaLibsDir ?: "../JavaLibs">
+	<cfset this.useLocalAssets = local.cfg.useLocalAssets ?: true>
+	<cfset this.useSSE = local.cfg.useSSE ?: false>
 
-    <!--- Client-side UI refresh interval in seconds --->
-    <cfset this.clientPollInterval = 10>
+	<!--- Resolve custom tags and java libs to absolute paths --->
+	<cfset local.jFile = createObject("java","java.io.File")>
+	<cfset local.cfcDir = getDirectoryFromPath(getCurrentTemplatePath())>
+	<cfset local.customTagsPath = local.jFile.init(local.cfcDir, this.customTagsDir).getCanonicalPath()>
+	<cfset local.javaLibsPath = local.jFile.init(local.cfcDir, this.javaLibsDir).getCanonicalPath()>
 
-    <!--- Seconds before UI warns that a server start may have failed --->
-    <cfset this.startupTimeout = 60>
+	<!--- Register custom tags at the application level (works across all engines) --->
+	<cfset this.customTagPaths = local.customTagsPath>
 
-    <!--- Archive leftover _payloads/ files on application start --->
-    <cfset this.archiveOnStartup = true>
+	<!--- Register Java libraries --->
+	<cfset this.javaSettings = {
+		"loadPaths": [local.javaLibsPath],
+		"reloadOnChange": false
+	}>
 
-    <!--- Ace Editor theme name --->
-    <cfset this.editorTheme = "monokai">
+	<!--- Shared secret token for _payloads/ access via cfhttp.
+		Must be stable across all engines sharing this webroot,
+		so derive from the application name prefix (not engine-specific paths). --->
+	<cfset this.payloadToken = hash("CFMLFiddle_payloadAccess_" & this.serverNamePrefix, "SHA-256")>
 
-    <!--- Prefix for generated server names to avoid collisions --->
-    <cfset this.serverNamePrefix = "cffiddle-">
+	<cffunction name="onApplicationStart" returntype="boolean" output="false">
+		<!--- Initialize JSONUtil --->
+		<cfset application.jsonUtil = new jsonutil.JSONUtil()>
 
-    <!--- Directories (relative to webroot) --->
-    <cfset this.payloadsDir = "_payloads">
-    <cfset this.archiveDir = "../archive">
-    <cfset this.snippetsDir = "../snippets">
-    <cfset this.templateServersDir = "../current-servers">
-    <cfset this.runtimeServersDir = "../runtime/servers">
+		<!--- JSON-safe booleans --->
+		<cfset application.jTrue = javacast("boolean", true)>
+		<cfset application.jFalse = javacast("boolean", false)>
 
-    <!--- Shared secret token for _payloads/ access via cfhttp --->
-    <cfset this.payloadToken = hash(this.name & "payloadAccess" & getCurrentTemplatePath(), "SHA-256")>
+		<!--- Detect timestamp mask: CFML engines use nn=minutes/lll=ms,
+			BoxLang native mode uses Java's mm=minutes/A=ms-of-day.
+			Test by formatting a known date - if nn produces "30" it's CFML mode. --->
+		<cfset var testMinutes = dateTimeFormat(createDateTime(2000, 1, 1, 0, 30, 0), "nn")>
+		<cfset application.timestampMask = (testMinutes eq "30")
+			? "yyyy-MM-dd'T'HH:nn:ss.lllZ"
+			: "yyyy-MM-dd'T'HH:mm:ss.AZ">
 
-    <cffunction name="onApplicationStart" returntype="boolean" output="false">
-        <!--- Initialize JSONUtil --->
-        <cfset application.jsonUtil = createObject("component", "jsonutil.JSONUtil").init()>
+		<!--- Build absolute paths from the CFC's own location (immune to
+			request-template context shifts during reinit).
+			getCurrentTemplatePath() always returns this CFC's path. --->
+		<cfset var webroot = getDirectoryFromPath(getCurrentTemplatePath())>
+		<cfset var jFile = createObject("java", "java.io.File")>
 
-        <!--- Store config in application scope for api2 endpoints to read --->
-        <cfset application.config = [
-            "executionTimeout": this.executionTimeout,
-            "serverPollInterval": this.serverPollInterval,
-            "clientPollInterval": this.clientPollInterval,
-            "startupTimeout": this.startupTimeout,
-            "editorTheme": this.editorTheme,
-            "serverNamePrefix": this.serverNamePrefix,
-            "payloadsDir": this.payloadsDir,
-            "archiveDir": this.archiveDir,
-            "snippetsDir": this.snippetsDir,
-            "templateServersDir": this.templateServersDir,
-            "runtimeServersDir": this.runtimeServersDir,
-            "payloadToken": this.payloadToken
-        ]>
+		<!--- Store config in application scope for api2 endpoints to read --->
+		<cfset application.version = this.version>
+		<cfif structKeyExists(server, "coldfusion")>
+			<cfset application.userAgent = "CFMLFiddle/#this.version# (#server.coldfusion.productname# #server.coldfusion.productversion#; CommandBox)">
+		<cfelseif structKeyExists(server, "boxlang")>
+			<cfset application.userAgent = "CFMLFiddle/#this.version# (BoxLang #server.boxlang.version#; CommandBox)">
+		<cfelse>
+			<cfset application.userAgent = "CFMLFiddle/#this.version# (CommandBox)">
+		</cfif>
 
-        <!--- Initialize server status cache --->
-        <cfset application.serverStatuses = [:]>
+		<cfset application.config = [
+			"version": this.version,
+			"executionTimeout": this.executionTimeout,
+			"serverPollInterval": this.serverPollInterval,
+			"clientPollInterval": this.clientPollInterval,
+			"startupTimeout": this.startupTimeout,
+			"editorTheme": this.editorTheme,
+			"serverNamePrefix": this.serverNamePrefix,
+			"boxExe": this.boxExe,
+			"payloadsDir": this.payloadsDir,
+			"payloadsPath": jFile.init(webroot, this.payloadsDir).getCanonicalPath(),
+			"archivePath": jFile.init(webroot, this.archiveDir).getCanonicalPath(),
+			"snippetsPath": jFile.init(webroot, this.snippetsDir).getCanonicalPath(),
+			"templateServersPath": jFile.init(webroot, this.templateServersDir).getCanonicalPath(),
+			"customTagsPath": jFile.init(webroot, this.customTagsDir).getCanonicalPath(),
+			"javaLibsPath": jFile.init(webroot, this.javaLibsDir).getCanonicalPath(),
+			"payloadToken": this.payloadToken,
+			"useLocalAssets": this.useLocalAssets,
+			"useSSE": this.useSSE
+		]>
 
-        <!--- Ensure directories exist --->
-        <cfset var payloadsPath = expandPath(this.payloadsDir)>
-        <cfset var archivePath = expandPath(this.archiveDir)>
-        <cfset var runtimeServersPath = expandPath(this.runtimeServersDir)>
-        <cfif not directoryExists(payloadsPath)>
-            <cfset directoryCreate(payloadsPath)>
-        </cfif>
-        <cfif not directoryExists(archivePath)>
-            <cfset directoryCreate(archivePath)>
-        </cfif>
-        <cfif not directoryExists(runtimeServersPath)>
-            <cfset directoryCreate(runtimeServersPath)>
-        </cfif>
+		<!--- Initialize server status cache --->
+		<cfset application.serverStatuses = [:]>
 
-        <!--- Archive leftover payloads from prior session if enabled --->
-        <cfif this.archiveOnStartup and fileExists(expandPath("api2/_archive-helper.cfm"))>
-            <cfinclude template="api2/_archive-helper.cfm">
-        </cfif>
+		<!--- Reset host server detection (re-detected on first request) --->
+		<cfset application.hostServerKey = "">
 
-        <!--- Generate runtime server configs from templates --->
-        <cfif fileExists(expandPath("api2/_server-config-helper.cfm"))>
-            <cfinclude template="api2/_server-config-helper.cfm">
-        </cfif>
+		<!--- Ensure directories exist --->
+		<cfif !directoryExists(application.config.payloadsPath)>
+			<cfset directoryCreate(application.config.payloadsPath)>
+		</cfif>
+		<cfif !directoryExists(application.config.archivePath)>
+			<cfset directoryCreate(application.config.archivePath)>
+		</cfif>
 
-        <!--- Initialize heartbeat tracking --->
-        <cfset application.lastHeartbeat = now()>
+		<!--- Generate runtime server configs from templates --->
+		<cfinclude template="api2/_server-config-helper.cfm">
 
-        <cfreturn true>
-    </cffunction>
+		<!--- Run initial heartbeat to detect already-running servers --->
+		<cfinclude template="api2/_heartbeat-helper.cfm">
+		<cfset application.lastHeartbeat = now()>
 
-    <cffunction name="onRequestStart" returntype="boolean" output="true">
-        <cfargument name="targetPage" type="string" required="true">
+		<cfreturn true>
+	</cffunction>
 
-        <!--- ===== IP ALLOWLIST CHECK ===== --->
-        <cfset var ipAllowed = false>
-        <cfset var remoteIP = CGI.REMOTE_ADDR>
-        <cfset var ipList = this.allowedIPs>
+	<cffunction name="onRequestStart" returntype="boolean" output="true">
+		<cfargument name="targetPage" type="string" required="true">
 
-        <!--- Wildcard: allow all --->
-        <cfif listFind(ipList, "*")>
-            <cfset ipAllowed = true>
-        <cfelse>
-            <cfloop list="#ipList#" index="local.allowedIP">
-                <cfset local.allowedIP = trim(local.allowedIP)>
-                <!--- Exact match --->
-                <cfif remoteIP eq local.allowedIP>
-                    <cfset ipAllowed = true>
-                    <cfbreak>
-                </cfif>
-                <!--- Starts-with match (append dot if missing to prevent 192.168.1 matching 192.168.10.x) --->
-                <cfset var prefix = local.allowedIP>
-                <cfif right(prefix, 1) neq ".">
-                    <cfset prefix = prefix & ".">
-                </cfif>
-                <cfif left(remoteIP, len(prefix)) eq prefix>
-                    <cfset ipAllowed = true>
-                    <cfbreak>
-                </cfif>
-            </cfloop>
-        </cfif>
+		<!--- ===== IP ALLOWLIST CHECK ===== --->
+		<cfset var ipAllowed = false>
+		<cfset var remoteIP = CGI.REMOTE_ADDR>
+		<cfset var ipList = this.allowedIPs>
 
-        <cfif not ipAllowed>
-            <cfcontent type="text/html" reset="true">
-            <cfoutput>
-                <h2>Access Denied</h2>
-                <p>Your IP address is <strong>#encodeForHTML(remoteIP)#</strong>.</p>
-                <p>Contact an administrator to be added to the allowlist.</p>
-            </cfoutput>
-            <cfreturn false>
-        </cfif>
+		<!--- Wildcard: allow all --->
+		<cfif listFind(ipList, "*")>
+			<cfset ipAllowed = true>
+		<cfelse>
+			<cfloop list="#ipList#" index="local.allowedIP">
+				<cfset local.allowedIP = trim(local.allowedIP)>
+				<!--- Exact match --->
+				<cfif remoteIP eq local.allowedIP>
+					<cfset ipAllowed = true>
+					<cfbreak>
+				</cfif>
+				<!--- Starts-with match (append dot if missing to prevent 192.168.1 matching 192.168.10.x) --->
+				<cfset var prefix = local.allowedIP>
+				<cfif right(prefix, 1) neq ".">
+					<cfset prefix = prefix & ".">
+				</cfif>
+				<cfif left(remoteIP, len(prefix)) eq prefix>
+					<cfset ipAllowed = true>
+					<cfbreak>
+				</cfif>
+			</cfloop>
+		</cfif>
 
-        <!--- ===== BLOCK DIRECT ACCESS TO _payloads/ ===== --->
-        <cfif findNoCase("/_payloads/", arguments.targetPage) eq 1
-              or findNoCase("\_payloads\", arguments.targetPage) eq 1>
-            <!--- Allow if the shared secret token is present via header (server-to-server cfhttp) --->
-            <cfif structKeyExists(CGI, "HTTP_X_PAYLOAD_TOKEN") and CGI.HTTP_X_PAYLOAD_TOKEN eq this.payloadToken>
-                <!--- Allowed: this is a server-to-server execution request --->
-            <cfelse>
-                <cfcontent type="text/html" reset="true">
-                <cfoutput>
-                    <h2>Access Denied</h2>
-                    <p>Direct access to this directory is not permitted.</p>
-                </cfoutput>
-                <cfreturn false>
-            </cfif>
-        </cfif>
+		<cfif !ipAllowed>
+			<cfcontent type="text/html" reset="true">
+			<cfoutput>
+				<h2>Access Denied</h2>
+				<p>Your IP address is <strong>#encodeForHTML(remoteIP)#</strong>.</p>
+				<p>Contact an administrator to be added to the allowlist.</p>
+			</cfoutput>
+			<cfreturn false>
+		</cfif>
 
-        <!--- ===== HEARTBEAT: check if server-side poll is due (runs in background thread) ===== --->
-        <cfif structKeyExists(application, "lastHeartbeat")
-              and dateDiff("s", application.lastHeartbeat, now()) gte application.config.serverPollInterval
-              and fileExists(expandPath("api2/_heartbeat-helper.cfm"))>
-            <cfset application.lastHeartbeat = now()>
-            <cfthread name="heartbeat_#createUUID()#" action="run">
-                <cfinclude template="api2/_heartbeat-helper.cfm">
-            </cfthread>
-        </cfif>
+		<!--- ===== SECURITY HEADERS ===== --->
+		<cfheader name="X-Content-Type-Options" value="nosniff">
+		<cfheader name="X-Frame-Options" value="SAMEORIGIN">
+		<cfheader name="Referrer-Policy" value="strict-origin-when-cross-origin">
 
-        <cfreturn true>
-    </cffunction>
+		<!--- ===== APPLICATION REINIT ===== --->
+		<cfif structKeyExists(url, "reinit")>
+			<cfset onApplicationStart()>
+
+			<!--- Propagate reinit to all other online servers sharing this webroot --->
+			<cfset var reqPort = val(CGI.SERVER_PORT)>
+			<cfloop collection="#application.serverStatuses#" item="local.rKey">
+				<cfif application.serverStatuses[local.rKey]["status"] eq "online"
+					&& application.serverStatuses[local.rKey]["port"] neq reqPort>
+					<cftry>
+						<cfhttp url="http://#application.serverStatuses[local.rKey]['host']#:#application.serverStatuses[local.rKey]['port']#/?reinit"
+							method="GET" timeout="5" result="local.reinitResult" userAgent="#application.userAgent#">
+							<cfhttpparam type="header" name="X-Payload-Token" value="#application.config.payloadToken#">
+						</cfhttp>
+					<cfcatch>
+						<!--- Server may be slow to respond; continue with others --->
+					</cfcatch>
+					</cftry>
+				</cfif>
+			</cfloop>
+		</cfif>
+
+		<!--- ===== DETECT HOST SERVER (once, on first request) ===== --->
+		<cfif !structKeyExists(application, "hostServerKey") || !len(application.hostServerKey)>
+			<cfset var reqPort = val(CGI.SERVER_PORT)>
+			<cfloop collection="#application.serverRegistry#" item="local.sKey">
+				<cfif application.serverRegistry[local.sKey]["port"] eq reqPort>
+					<cfset application.hostServerKey = local.sKey>
+					<cfbreak>
+				</cfif>
+			</cfloop>
+			<cfif !structKeyExists(application, "hostServerKey")>
+				<cfset application.hostServerKey = "">
+			</cfif>
+		</cfif>
+
+		<!--- ===== BLOCK api2 HELPER FILES (underscore-prefixed, cfinclude only) ===== --->
+		<cfif findNoCase("/api2/", arguments.targetPage) eq 1>
+			<cfif left(listLast(arguments.targetPage, "/\"), 1) eq "_">
+				<cfcontent type="text/html" reset="true">
+				<cfoutput>
+					<h2>Access Denied</h2>
+					<p>Direct access to this file is not permitted.</p>
+				</cfoutput>
+				<cfreturn false>
+			</cfif>
+			<!--- Set JSON content type for api2 responses (except SSE endpoint) --->
+			<cfif !findNoCase("server-events.cfm", arguments.targetPage)>
+				<cfcontent type="application/json" reset="true">
+			</cfif>
+		</cfif>
+
+		<!--- ===== BLOCK DIRECT ACCESS TO _payloads/ ===== --->
+		<cfif findNoCase("_payloads", arguments.targetPage)>
+			<!--- Allow if the shared secret token is present via header (server-to-server cfhttp).
+					Check multiple CGI key formats for cross-engine compatibility. --->
+			<cfset var tokenMatch = false>
+			<cfif structKeyExists(CGI, "HTTP_X_PAYLOAD_TOKEN") && CGI.HTTP_X_PAYLOAD_TOKEN eq this.payloadToken>
+				<cfset tokenMatch = true>
+			</cfif>
+			<!--- Some engines use getHTTPRequestData for custom headers --->
+			<cfif !tokenMatch>
+				<cftry>
+					<cfset var reqHeaders = getHTTPRequestData().headers>
+					<cfif structKeyExists(reqHeaders, "X-Payload-Token") && reqHeaders["X-Payload-Token"] eq this.payloadToken>
+						<cfset tokenMatch = true>
+					</cfif>
+				<cfcatch></cfcatch>
+				</cftry>
+			</cfif>
+			<!--- Allow signed URL token for iframe interactive mode --->
+			<cfif !tokenMatch && structKeyExists(url, "_tk")>
+				<cfset var fileName = listLast(arguments.targetPage, "/\")>
+				<cfif url._tk eq hash(fileName & this.payloadToken, "SHA-256")>
+					<cfset tokenMatch = true>
+				</cfif>
+			</cfif>
+			<cfif tokenMatch>
+				<!--- Allowed: this is a server-to-server execution request --->
+			<cfelse>
+				<cfcontent type="text/html" reset="true">
+				<cfoutput>
+					<h2>Access Denied</h2>
+					<p>Direct access to this directory is not permitted.</p>
+				</cfoutput>
+				<cfreturn false>
+			</cfif>
+		</cfif>
+
+		<!--- ===== HEARTBEAT: check if server-side poll is due (runs in background thread) ===== --->
+		<cfif structKeyExists(application, "lastHeartbeat")
+			&& dateDiff("s", application.lastHeartbeat, now()) gte application.config.serverPollInterval>
+			<cfset application.lastHeartbeat = now()>
+			<cfthread name="heartbeat_#createUUID()#" action="run">
+				<cfinclude template="api2/_heartbeat-helper.cfm">
+			</cfthread>
+		</cfif>
+
+		<cfreturn true>
+	</cffunction>
 
 </cfcomponent>

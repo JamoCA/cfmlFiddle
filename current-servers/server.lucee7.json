@@ -1,71 +1,76 @@
 {
-    "name":"lucee7",
-    "app":{
-        "cfengine":"lucee@7",
-        "libDirs":"c:\\CFusionExtra\\java,c:\\CFusionExtra\\java2021"
+    "name": "cfmlfiddle-lucee7",
+    "app": {
+        "cfengine": "lucee@7",
+        "libDirs": "C:\\cfmlfiddle\\JavaLibs"
     },
-    "dockEnable":true,
-    "trayEnable":true,
-    "json":{
-        "ansiColors":{
-            "constant":"48B9FF"
+    "dockEnable": true,
+    "trayEnable": true,
+    "json": {
+        "ansiColors": {
+            "constant": "48B9FF"
         }
     },
-    "customTagPaths":[
+    "customTagPaths": [
         {
-            "physical":"c:\\CFusionExtra\\customtags",
-            "primary":"physical"
+            "physical": "C:\\cfmlfiddle\\CustomTags",
+            "primary": "physical"
         }
     ],
-    "luceeConfig":{
-        "customTagMappings":{
-            "mapping":[
+    "luceeConfig": {
+        "customTagMappings": {
+            "mapping": [
                 {
-                    "physical":"c:\\CFusionExtra\\customtags",
-                    "primary":"physical",
-                    "virtual":"/customtags",
-                    "readonly":false
+                    "physical": "C:\\cfmlfiddle\\CustomTags",
+                    "primary": "physical",
+                    "virtual": "/customtags",
+                    "readonly": false
                 }
             ]
         }
     },
-    "jvm":{
-        "javaHome":"C:\\Program Files\\Java\\jre21",
-        "args":[
+    "jvm": {
+        "javaVersion": "openjdk25",
+        "args": [
             "-D:javax.xml.accessExternalDTD=''",
             "-D:javax.xml.accessExternalSchema=''",
             "-D:javax.xml.accessExternalStylesheet=''"
         ]
     },
-    "web":{
-        "host":"0.0.0.0",
-        "hostAlias":"lucee7.local",
-        "webroot":"www",
-        "directoryBrowsing":true,
-        "accessLogEnable":true,
-        "blockCFAdmin":false,
-        "blockSensitivePaths":true,
-        "welcomeFiles":"index.cfm,index.html,index.htm",
-        "gzipEnable":true,
-        "blockFlashRemoting":true,
-        "rewrites":{
-            "enable":true
+    "web": {
+        "host": "127.0.0.1",
+        "hostAlias": "localhost",
+        "webroot": "../www",
+        "directoryBrowsing": true,
+        "accessLogEnable": true,
+        "blockCFAdmin": false,
+        "blockSensitivePaths": true,
+        "welcomeFiles": "index.cfm,index.html,index.htm",
+        "gzipEnable": true,
+        "blockFlashRemoting": true,
+        "rewrites": {
+            "enable": true
         },
-        "aliases":{
-            "/_scriptsGlobal":"c:\\Commandbox\\www\\_scriptsGlobal"
+        "HTTP": {
+            "enable": true,
+            "port": 13007
         },
-        "HTTP":{
-            "enable":true,
-            "port":3007
+        "mimeTypes": {
+            "heic": "image/heic",
+            "webmanifest": "application/manifest+json",
+            "avif": "image/avif",
+            "webp": "image/webp",
+            "woff2": "font/woff2",
+            "woff": "font/woff",
+            "mjs": "text/javascript",
+            "map": "application/json"
         },
-        "mimeTypes":{
-            "heic":"image/heic"
-        }
+        "allowedExt": "webmanifest,avif,webp,woff2,woff,mjs,map"
     },
-    "debug":true,
-    "trace":false,
-    "console":false,
-    "profile":"development",
-    "openBrowser":true,
-    "openBrowserURL":"http://lucee7.local:3007/"
+    "debug": true,
+    "trace": false,
+    "console": false,
+    "profile": "development",
+    "openBrowser": false,
+    "openBrowserURL": "http://localhost:13007/"
 }

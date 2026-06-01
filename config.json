@@ -1,0 +1,30 @@
+{
+    "_comment": "CFMLFiddle configuration. Edit these values to customize the app. This file is read by Application.cfc on startup. Use Reinit to reload after changes.",
+
+    "allowedIPs": "127.0.0.1,::1,0:0:0:0:0:0:0:1",
+
+    "executionTimeout": 0,
+
+    "serverPollInterval": 30,
+
+    "clientPollInterval": 10,
+
+    "startupTimeout": 60,
+
+    "editorTheme": "monokai",
+
+    "serverNamePrefix": "cfmlfiddle-",
+
+    "boxExe": "c:\\commandbox\\box.exe",
+
+    "payloadsDir": "_payloads",
+    "archiveDir": "../archive",
+    "snippetsDir": "../snippets",
+    "customTagsDir": "../CustomTags",
+    "javaLibsDir": "../JavaLibs",
+    "templateServersDir": "../current-servers",
+
+    "useLocalAssets": true,
+
+    "useSSE": true
+}
