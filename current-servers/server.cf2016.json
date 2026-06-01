@@ -1,4 +1,4 @@
-{
+    {
     "name": "cfmlfiddle-cf2016",
     "app": {
         "cfengine": "adobe@2016",
@@ -61,7 +61,4 @@
     "profile": "development",
     "openBrowser": false,
     "openBrowserURL": "http://localhost:12016/",
-    "scripts": {
-        "onServerInitialInstall": "cfpm install caching debugger zip"
-    }
 }
