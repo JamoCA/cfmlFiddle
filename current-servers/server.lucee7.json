@@ -30,7 +30,7 @@
         }
     },
     "jvm": {
-        "javaHome": "C:\\Program Files\\Java\\jre21",
+        "javaVersion": "openjdk25",
         "args": [
             "-D:javax.xml.accessExternalDTD=''",
             "-D:javax.xml.accessExternalSchema=''",

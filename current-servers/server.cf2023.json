@@ -18,6 +18,7 @@
         }
     ],
     "jvm": {
+        "javaVersion": "openjdk17",
         "args": [
             "-D:javax.xml.accessExternalDTD=''",
             "-D:javax.xml.accessExternalSchema=''",
