@@ -1,4 +1,3 @@
-<<<<<<< HEAD
 <!---
 
 Copyright 2009 Nathan Mische
@@ -319,7 +318,6 @@ limitations under the License.
 	</cffunction>
 
 </cfcomponent>
-=======
 <!---
 
 Copyright 2009 Nathan Mische
@@ -640,4 +638,3 @@ limitations under the License.
 	</cffunction>
 
 </cfcomponent>
->>>>>>> e6ae76e64dcdbfea7603954a4ca5bc92f0d6367d

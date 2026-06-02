@@ -1,8 +1,4 @@
-<<<<<<< HEAD
 {
-=======
-    {
->>>>>>> e6ae76e64dcdbfea7603954a4ca5bc92f0d6367d
     "name": "cfmlfiddle-cf2016",
     "app": {
         "cfengine": "adobe@2016",
@@ -22,11 +18,7 @@
         }
     ],
     "jvm": {
-<<<<<<< HEAD
         "javaVersion": "openjdk11",
-=======
-        "javaVersion": "openjdk8",
->>>>>>> e6ae76e64dcdbfea7603954a4ca5bc92f0d6367d
         "args": [
             "-D:javax.xml.accessExternalDTD=''",
             "-D:javax.xml.accessExternalSchema=''",
@@ -68,9 +60,5 @@
     "console": false,
     "profile": "development",
     "openBrowser": false,
-<<<<<<< HEAD
     "openBrowserURL": "http://localhost:12016/"
-=======
-    "openBrowserURL": "http://localhost:12016/",
->>>>>>> e6ae76e64dcdbfea7603954a4ca5bc92f0d6367d
 }
