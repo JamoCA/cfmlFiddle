@@ -24,8 +24,7 @@
             "-D:javax.xml.accessExternalDTD=''",
             "-D:javax.xml.accessExternalSchema=''",
             "-D:javax.xml.accessExternalStylesheet=''"
-        ],
-        "javaVersion": "openjdk21"
+        ]
     },
     "web": {
         "host": "127.0.0.1",

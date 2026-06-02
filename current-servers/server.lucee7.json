@@ -30,7 +30,7 @@
         }
     },
     "jvm": {
-        "javaVersion": "openjdk25",
+        "javaVersion": "openjdk21",
         "args": [
             "-D:javax.xml.accessExternalDTD=''",
             "-D:javax.xml.accessExternalSchema=''",

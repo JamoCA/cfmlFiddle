@@ -1,4 +1,4 @@
-    {
+{
     "name": "cfmlfiddle-cf2016",
     "app": {
         "cfengine": "adobe@2016",
@@ -18,7 +18,7 @@
         }
     ],
     "jvm": {
-        "javaVersion": "openjdk8",
+        "javaVersion": "openjdk11",
         "args": [
             "-D:javax.xml.accessExternalDTD=''",
             "-D:javax.xml.accessExternalSchema=''",
@@ -60,5 +60,5 @@
     "console": false,
     "profile": "development",
     "openBrowser": false,
-    "openBrowserURL": "http://localhost:12016/",
+    "openBrowserURL": "http://localhost:12016/"
 }
