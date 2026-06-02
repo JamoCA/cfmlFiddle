@@ -19,7 +19,11 @@
         }
     ],
     "jvm": {
+<<<<<<< HEAD
         "javaVersion": "openjdk21",
+=======
+        "javaVersion": "openjdk25",
+>>>>>>> e6ae76e64dcdbfea7603954a4ca5bc92f0d6367d
         "args": [
             "-D:javax.xml.accessExternalDTD=''",
             "-D:javax.xml.accessExternalSchema=''",
@@ -81,4 +85,8 @@
             }
         }
     }
+<<<<<<< HEAD
 }
+=======
+}
+>>>>>>> e6ae76e64dcdbfea7603954a4ca5bc92f0d6367d
