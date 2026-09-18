@@ -57,7 +57,7 @@ You need [CommandBox](https://www.ortussolutions.com/products/commandbox) instal
 
 1. Clone or download this repo.
 2. Edit `config.json` in the project root. At minimum, set `boxExe` to the path of your `box` executable.
-3. Run the launcher:
+3. From the top-level folder of the repo, run the launcher:
    ```
    box task run launchCFMLFiddle
    ```
@@ -67,7 +67,9 @@ You need [CommandBox](https://www.ortussolutions.com/products/commandbox) instal
 
 ### Other ways to start
 
-Windows: double-click `startCFMLFiddle.bat`
+From the top-level folder of the repo, do either of the following:
+
+On Windows, double-click `startCFMLFiddle.bat`.
 
 Or start a specific engine directly:
 ```
