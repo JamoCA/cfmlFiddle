@@ -63,7 +63,7 @@
     "openBrowser": false,
     "openBrowserURL": "http://localhost:14002/",
     "scripts": {
-        "onServerInitialInstall": "install bx-compat-cfml,bx-zip,bx-debug"
+        "onServerInitialInstall": "install bx-compat-cfml"
     },
     "boxlang": {
         "compatibility": {
